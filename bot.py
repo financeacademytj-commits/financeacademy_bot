@@ -35,6 +35,20 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 ADMIN_ID = os.getenv("ADMIN_ID", "").strip()  # numeric string
 SITE_URL = os.getenv("SITE_URL", "https://financeacademy.online").strip()
+PAYMENT_TEXT = """
+💳 Реквизиты для оплаты курса
+
+🇪🇺 Европа (Bank Transfer)
+IBAN: DE89 2022 0800 0058 7053 93
+Имя: Ahliddin Isoev
+Банк: Vivid
+Комментарий: transfer
+
+🇹🇯 Тоҷикистон (Dushanbe City Bank)
+Кошелёк: +992 918 315 131
+
+После оплаты нажмите «✅ Я оплатил» и отправьте скриншот чека.
+""".strip()
 
 # Support contacts (set in Railway Variables)
 SUPPORT_TG = os.getenv("SUPPORT_TG", "@financeacademytj").strip()
@@ -247,13 +261,20 @@ def plans_inline(uid: int) -> InlineKeyboardMarkup:
         [InlineKeyboardButton("🌐 Website", url=SITE_URL)],
     ]
     return InlineKeyboardMarkup(kb)
-
 def payment_inline(plan: str) -> InlineKeyboardMarkup:
     kb = [
-        [InlineKeyboardButton("✅ I paid / Ман пардохт кардам", callback_data=f"paid:{plan}")],
-        [InlineKeyboardButton("🌐 Website", url=SITE_URL)],
+        [
+            InlineKeyboardButton("💳 Реквизиты / Реквизитҳо", callback_data=f"pay:details:{plan}"),
+        ],
+        [
+            InlineKeyboardButton("✅ Я оплатил / Ман пардохт кардам", callback_data=f"pay:paid:{plan}"),
+        ],
+        [
+            InlineKeyboardButton("🌐 Website", url=SITE_URL),
+        ],
     ]
     return InlineKeyboardMarkup(kb)
+
 
 def groups_inline(uid: int, plan: str) -> Optional[InlineKeyboardMarkup]:
     lang = get_lang(uid)
@@ -786,6 +807,7 @@ def main() -> None:
     app.add_handler(CommandHandler("broadcast", cmd_broadcast))
 
     app.add_handler(CallbackQueryHandler(on_callback))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_receipt_photo))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text))
 
     app.add_error_handler(on_error)
